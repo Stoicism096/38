@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>日常对话模拟小游戏</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial Rounded MT Bold', 'Microsoft YaHei', sans-serif;
+        }
+        
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            padding: 20px;
+            overflow: hidden;
+        }
+        
+        .game-container {
+            position: relative;
+            width: 100%;
+            max-width: 360px;
+            height: 640px;
+            background: #fff;
+            border-radius: 25px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .header {
+            background: linear-gradient(to right, #4b6cb7, #182848);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            position: relative;
+            z-index: 10;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .header h1 {
+            font-size: 1.5rem;
+            margin-bottom: 5px;
+        }
+        
+        .progress-container {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            height: 12px;
+            margin-top: 10px;
+            overflow: hidden;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(to right, #00c9ff, #92fe9d);
+            width: 0%;
+            transition: width 0.5s ease;
+            border-radius: 10px;
+        }
+        
+        .stats {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+            font-size: 0.9rem;
+        }
+        
+        .level-info {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .hint-container {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 4px 10px;
+            border-radius: 20px;
+        }
+        
+        .hint-btn {
+            background: #ffc107;
+            color: #333;
+            border: none;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            font-weight: bold;
+            box-shadow: 0 3px 5px rgba(0, 0, 0, 0.2);
+            transition: all 0.2s;
+        }
+        
+        .hint-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .hint-btn:active:not(:disabled) {
+            transform: scale(0.95);
+        }
+        
+        .content {
+            flex: 1;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+        
+        .scene-container {
+            background: #f0f7ff;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+            border-left: 5px solid #4b6cb7;
+        }
+        
+        .scene-title {
+            font-size: 1.1rem;
+            color: #182848;
+            margin-bottom: 10px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .question {
+            font-size: 1.1rem;
+            color: #333;
+            line-height: 1.5;
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        
+        .options {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 10px;
+        }
+        
+        .option {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            font-size: 1rem;
+        }
+        
+        .option:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.08);
+            border-color: #4b6cb7;
+        }
+        
+        .option.correct {
+            background: #d4edda;
+            border-color: #28a745;
+        }
+        
+        .option.incorrect {
+            background: #f8d7da;
+            border-color: #dc3545;
+        }
+        
+        .option-letter {
+            display: inline-block;
+            width: 28px;
+            height: 28px;
+            background: #4b6cb7;
+            color: white;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 28px;
+            margin-right: 12px;
+            font-weight: bold;
+        }
+        
+        .hint-used .option:not(.correct) {
+            opacity: 0.6;
+        }
+        
+        .hint-used .option.correct {
+            transform: scale(1.05);
+            box-shadow: 0 0 15px rgba(40, 167, 69, 0.5);
+        }
+        
+        .celebration {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s;
+        }
+        
+        .celebration.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+        
+        .celebration h2 {
+            font-size: 3rem;
+            color: #fff;
+            text-align: center;
+            margin-bottom: 20px;
+            text-shadow: 0 0 10px #ffc107, 0 0 20px #ffc107;
+        }
+        
+        .celebration p {
+            color: #fff;
+            font-size: 1.5rem;
+            text-align: center;
+        }
+        
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: #f00;
+            opacity: 0.8;
+        }
+        
+        .footer {
+            padding: 15px 20px;
+            background: #f8f9fa;
+            text-align: center;
+            color: #6c757d;
+            font-size: 0.9rem;
+            border-top: 1px solid #e9ecef;
+        }
+        
+        @keyframes float {
+            0% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(10deg); }
+            100% { transform: translateY(0) rotate(0deg); }
+        }
+        
+        .trophy {
+            font-size: 5rem;
+            color: #ffc107;
+            margin-bottom: 20px;
+            animation: float 3s ease-in-out infinite;
+            text-shadow: 0 0 10px rgba(255, 193, 7, 0.5);
+        }
+        
+        @media (max-width: 400px) {
+            .game-container {
+                height: 100vh;
+                max-width: 100%;
+                border-radius: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="header">
+            <h1>日常对话模拟小游戏</h1>
+            <div class="progress-container">
+                <div class="progress-bar" id="progressBar"></div>
+            </div>
+            <div class="stats">
+                <div class="level-info">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <span id="levelText">第1关</span>
+                </div>
+                <div class="hint-container">
+                    <span>提示机会:</span>
+                    <button class="hint-btn" id="hintButton" title="使用提示（剩余3次）">
+                        <i class="fas fa-lightbulb"></i>
+                    </button>
+                    <span id="hintCount">3</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="content" id="content">
+            <!-- 内容由JS动态生成 -->
+        </div>
+        
+        <div class="celebration" id="celebration">
+            <div class="trophy">
+                <i class="fas fa-trophy"></i>
+            </div>
+            <h2>恭喜通关!</h2>
+            <p id="celebrationText">准备进入下一关</p>
+        </div>
+        
+        <div class="footer">
+            提升日常交流能力 • 模拟真实对话场景
+        </div>
+        
+        <!-- 音效 -->
+        <audio id="correctSound" src="https://assets.mixkit.co/sfx/preview/mixkit-winning-chimes-2015.mp3"></audio>
+        <audio id="wrongSound" src="https://assets.mixkit.co/sfx/preview/mixkit-wrong-answer-fail-notification-946.mp3"></audio>
+        <audio id="celebrationSound" src="https://assets.mixkit.co/sfx/preview/mixkit-winning-animation-tada-2187.mp3"></audio>
+    </div>
+
+    <script>
+        // 游戏数据
+        const gameData = [
+            // 关卡1
+            [
+                {
+                    scene: "早上遇到邻居",
+                    question: "你想和邻居打招呼，应该说：",
+                    options: ["再见！", "早上好！", "晚上好！"],
+                    correctIndex: 1
+                },
+                {
+                    scene: "朋友帮你捡起了掉的书",
+                    question: "你应该说什么？",
+                    options: ["对不起。", "没关系。", "谢谢你！"],
+                    correctIndex: 2
+                }
+            ],
+            // 关卡2
+            [
+                {
+                    scene: "在咖啡店想点一杯咖啡",
+                    question: "怎么对店员说？",
+                    options: ["给我一杯咖啡。", "请给我一杯咖啡，谢谢。", "咖啡多少钱？"],
+                    correctIndex: 1
+                },
+                {
+                    scene: "有人问你 \"How are you?\" (你好吗？)",
+                    question: "最合适的回答是：",
+                    options: [
+                        "I'm 20 years old. (我20岁。)", 
+                        "I'm fine, thank you. And you? (我很好，谢谢。你呢？)", 
+                        "My name is Li. (我叫李。)"
+                    ],
+                    correctIndex: 1
+                }
+            ],
+            // 关卡3
+            [
+                {
+                    scene: "你需要知道现在几点了",
+                    question: "怎么礼貌地询问陌生人？",
+                    options: ["喂，时间！", "现在几点？", "打扰一下，请问现在几点了？"],
+                    correctIndex: 2
+                },
+                {
+                    scene: "在图书馆找不到想借的书",
+                    question: "怎么向图书管理员求助？",
+                    options: [
+                        "书在哪里？", 
+                        "对不起，打扰一下。请问《XXX》这本书在哪里可以找到？", 
+                        "把书给我。"
+                    ],
+                    correctIndex: 1
+                }
+            ],
+            // 关卡4
+            [
+                {
+                    scene: "你双手拿着东西，打不开门",
+                    question: "怎么请后面的人帮忙？",
+                    options: [
+                        "Open the door! (开门！)", 
+                        "Could you please open the door for me? (你能帮我开下门吗？)", 
+                        "Go away! (走开！)"
+                    ],
+                    correctIndex: 1
+                },
+                {
+                    scene: "在商店看中一件衣服，想知道价格",
+                    question: "怎么问店员？",
+                    options: ["这个太贵了。", "请问这件衣服多少钱？", "我要买这个。"],
+                    correctIndex: 1
+                }
+            ],
+            // 关卡5
+            [
+                {
+                    scene: "朋友邀请你去参加聚会，但你没空",
+                    question: "怎么委婉拒绝？",
+                    options: [
+                        "我不想去。", 
+                        "谢谢你的邀请！不过很抱歉，那天我有其他安排了。", 
+                        "改天再说吧。"
+                    ],
+                    correctIndex: 1
+                },
+                {
+                    scene: "不小心撞到了别人",
+                    question: "应该立刻说什么？",
+                    options: ["你走路小心点！", "哎呀！", "对不起！非常抱歉！"],
+                    correctIndex: 2
+                }
+            ]
+        ];
+
+        // 游戏状态
+        let currentLevel = 0;
+        let currentQuestion = 0;
+        let hintCount = 3;
+        let score = 0;
+        let hintUsedInCurrentQuestion = false;
+
+        // DOM元素
+        const contentEl = document.getElementById('content');
+        const progressBarEl = document.getElementById('progressBar');
+        const levelTextEl = document.getElementById('levelText');
+        const hintButtonEl = document.getElementById('hintButton');
+        const hintCountEl = document.getElementById('hintCount');
+        const celebrationEl = document.getElementById('celebration');
+        const celebrationTextEl = document.getElementById('celebrationText');
+        const correctSound = document.getElementById('correctSound');
+        const wrongSound = document.getElementById('wrongSound');
+        const celebrationSound = document.getElementById('celebrationSound');
+
+        // 初始化游戏
+        function initGame() {
+            currentLevel = 0;
+            currentQuestion = 0;
+            hintCount = 3;
+            score = 0;
+            updateStats();
+            renderQuestion();
+        }
+
+        // 更新游戏状态显示
+        function updateStats() {
+            levelTextEl.textContent = `第${currentLevel + 1}关`;
+            hintCountEl.textContent = hintCount;
+            
+            // 计算进度（当前关卡+当前问题）
+            const totalQuestions = gameData.length * 2;
+            const completed = (currentLevel * 2) + currentQuestion;
+            const progress = (completed / totalQuestions) * 100;
+            progressBarEl.style.width = `${progress}%`;
+            
+            // 更新提示按钮状态
+            hintButtonEl.disabled = hintCount <= 0;
+            hintButtonEl.title = `使用提示（剩余${hintCount}次）`;
+        }
+
+        // 渲染当前问题
+        function renderQuestion() {
+            hintUsedInCurrentQuestion = false;
+            contentEl.classList.remove('hint-used');
+            
+            const questionData = gameData[currentLevel][currentQuestion];
+            
+            let html = `
+                <div class="scene-container">
+                    <div class="scene-title">
+                        <i class="fas fa-map-marker-alt"></i>
+                        ${questionData.scene}
+                    </div>
+                    <div class="question">
+                        ${questionData.question}
+                    </div>
+                </div>
+                <div class="options">
+            `;
+            
+            // 添加选项
+            const letters = ['A', 'B', 'C'];
+            questionData.options.forEach((option, index) => {
+                html += `
+                    <div class="option" data-index="${index}">
+                        <span class="option-letter">${letters[index]}</span>
+                        ${option}
+                    </div>
+                `;
+            });
+            
+            html += `</div>`;
+            contentEl.innerHTML = html;
+            
+            // 添加选项点击事件
+            document.querySelectorAll('.option').forEach(option => {
+                option.addEventListener('click', handleAnswer);
+            });
+        }
+
+        // 处理答案选择
+        function handleAnswer(e) {
+            const selectedOption = e.currentTarget;
+            const selectedIndex = parseInt(selectedOption.dataset.index);
+            const questionData = gameData[currentLevel][currentQuestion];
+            
+            // 禁用所有选项
+            document.querySelectorAll('.option').forEach(option => {
+                option.removeEventListener('click', handleAnswer);
+                option.style.pointerEvents = 'none';
+            });
+            
+            // 检查答案
+            if (selectedIndex === questionData.correctIndex) {
+                // 正确
+                selectedOption.classList.add('correct');
+                correctSound.currentTime = 0;
+                correctSound.play();
+                score++;
+            } else {
+                // 错误
+                selectedOption.classList.add('incorrect');
+                wrongSound.currentTime = 0;
+                wrongSound.play();
+                
+                // 显示正确答案
+                document.querySelectorAll('.option')[questionData.correctIndex].classList.add('correct');
+            }
+            
+            // 进入下一题或下一关
+            setTimeout(() => {
+                nextStep();
+            }, 1500);
+        }
+
+        // 进入下一步
+        function nextStep() {
+            currentQuestion++;
+            
+            // 检查是否完成当前关卡
+            if (currentQuestion >= gameData[currentLevel].length) {
+                // 完成当前关卡
+                showCelebration();
+            } else {
+                // 进入当前关卡的下一题
+                updateStats();
+                renderQuestion();
+            }
+        }
+
+        // 显示庆祝动画
+        function showCelebration() {
+            celebrationTextEl.textContent = currentLevel === 4 ? 
+                "恭喜完成所有关卡！" : 
+                `准备进入第${currentLevel + 2}关`;
+                
+            celebrationEl.classList.add('active');
+            celebrationSound.currentTime = 0;
+            celebrationSound.play();
+            
+            // 创建五彩纸屑效果
+            createConfetti();
+            
+            setTimeout(() => {
+                celebrationEl.classList.remove('active');
+                
+                // 进入下一关或重置游戏
+                currentLevel++;
+                currentQuestion = 0;
+                
+                if (currentLevel >= gameData.length) {
+                    // 完成所有关卡，回到第一关
+                    currentLevel = 0;
+                }
+                
+                updateStats();
+                renderQuestion();
+            }, 2500);
+        }
+
+        // 创建五彩纸屑效果
+        function createConfetti() {
+            const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff'];
+            const container = celebrationEl;
+            
+            for (let i = 0; i < 100; i++) {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti';
+                confetti.style.left = `${Math.random() * 100}%`;
+                confetti.style.top = `${Math.random() * 100}%`;
+                confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                confetti.style.transform = `rotate(${Math.random() * 360}deg)`;
+                confetti.style.width = `${Math.random() * 10 + 5}px`;
+                confetti.style.height = `${Math.random() * 10 + 5}px`;
+                container.appendChild(confetti);
+                
+                // 动画
+                confetti.animate(
+                    [
+                        { transform: 'translateY(0) rotate(0deg)', opacity: 1 },
+                        { transform: `translateY(${window.innerHeight}px) rotate(${Math.random() * 360}deg)`, opacity: 0 }
+                    ],
+                    {
+                        duration: Math.random() * 3000 + 2000,
+                        easing: 'cubic-bezier(0,0.8,0.2,1)'
+                    }
+                );
+                
+                // 移除元素
+                setTimeout(() => {
+                    confetti.remove();
+                }, 5000);
+            }
+        }
+
+        // 使用提示
+        function useHint() {
+            if (hintCount <= 0 || hintUsedInCurrentQuestion) return;
+            
+            hintCount--;
+            hintUsedInCurrentQuestion = true;
+            updateStats();
+            
+            const options = document.querySelectorAll('.option');
+            const questionData = gameData[currentLevel][currentQuestion];
+            const wrongOptions = [];
+            
+            // 收集错误选项
+            options.forEach((option, index) => {
+                if (index !== questionData.correctIndex) {
+                    wrongOptions.push(option);
+                }
+            });
+            
+            // 随机移除一个错误选项
+            if (wrongOptions.length > 0) {
+                const randomIndex = Math.floor(Math.random() * wrongOptions.length);
+                wrongOptions[randomIndex].style.opacity = '0.3';
+                wrongOptions[randomIndex].style.pointerEvents = 'none';
+                
+                contentEl.classList.add('hint-used');
+            }
+        }
+
+        // 事件监听
+        hintButtonEl.addEventListener('click', useHint);
+
+        // 初始化游戏
+        initGame();
+    </script>
+</body>
+</html>
